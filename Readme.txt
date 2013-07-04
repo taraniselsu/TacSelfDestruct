@@ -8,15 +8,15 @@ This mod is made available under the Attribution-NonCommercial-ShareAlike 3.0 (C
 
 Source code is available at https://github.com/taraniselsu/TacSelfDestruct
 
-Features
+===== Features =====
+
 * Self Destruct - makes the entire vessel explode! Make sure you EVA your crew first!
 * Explode - only makes the Self Destruct part explode. Useful for creating a little explosion
      or getting rid of the extra weight. Not responsible for damage to the vessel.
 
-Installation procedure:
-1) copy everything from the Parts directory to the Parts directory in the game.
-2) copy everything from the Plugins directory to the Plugins directory in the game, creating
-     the directory if needed.
+===== Installation procedure =====
+
+1) Copy everything in the GameData directory to the {KSP}/GameData directory.
 
 Optional:
 Add the following lines to any part that you want to have the Self Destruct functionality:
