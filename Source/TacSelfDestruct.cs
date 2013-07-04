@@ -33,12 +33,9 @@ using UnityEngine;
 
 public class TacSelfDestruct : PartModule
 {
-    List<Part> allParts;
-
     [KSPEvent(guiActive = true, guiName = "Self Destruct!", active = true)]
     public void ExplodeAllEvent()
     {
-        allParts = vessel.parts;
         StartCoroutine(DoSelfDestruct());
     }
 
@@ -51,7 +48,6 @@ public class TacSelfDestruct : PartModule
     [KSPAction("Self Destruct!")]
     public void ExplodeAllAction(KSPActionParam param)
     {
-        allParts = vessel.parts;
         StartCoroutine(DoSelfDestruct());
     }
 
@@ -76,7 +72,7 @@ public class TacSelfDestruct : PartModule
                 // Explode the rest of the parts
                 vessel.parts.ForEach(p => p.explode());
             }
-            yield return new WaitForSeconds(0.02f);
+            yield return new WaitForSeconds(0.2f);
         }
     }
 }
