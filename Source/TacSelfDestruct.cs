@@ -31,48 +31,85 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-public class TacSelfDestruct : PartModule
+namespace Tac
 {
-    [KSPEvent(guiActive = true, guiName = "Self Destruct!", active = true)]
-    public void ExplodeAllEvent()
+    public class TacSelfDestruct : PartModule
     {
-        StartCoroutine(DoSelfDestruct());
-    }
+        [KSPField(isPersistant = true)]
+        public float timeDelay;
+        private float countDownInitiated;
 
-    [KSPEvent(guiActive = true, guiName = "Explode!", active = true)]
-    public void ExplodeEvent()
-    {
-        part.explode();
-    }
-
-    [KSPAction("Self Destruct!")]
-    public void ExplodeAllAction(KSPActionParam param)
-    {
-        StartCoroutine(DoSelfDestruct());
-    }
-
-    [KSPAction("Explode!")]
-    public void ExplodeAction(KSPActionParam param)
-    {
-        part.explode();
-    }
-
-    private IEnumerator<WaitForSeconds> DoSelfDestruct()
-    {
-        while (vessel.parts.Count > 0)
+        public override void OnAwake()
         {
-            // We do not want to blow up the root part nor the self destruct part until last.
-            Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && p.children.Count == 0);
-            if (part != null)
+            base.OnAwake();
+        }
+
+        public override void OnStart(PartModule.StartState state)
+        {
+            base.OnStart(state);
+            if (state != StartState.Editor)
             {
-                part.explode();
+                Events["ExplodeAllEvent"].guiName = "Self Destruct! (" + timeDelay + " second delay)";
             }
-            else
+        }
+
+        public override string GetInfo()
+        {
+            return base.GetInfo() + "Self Destruct delay = " + timeDelay;
+        }
+
+        [KSPEvent(guiActive = true, guiName = "Self Destruct!", active = true, guiActiveUnfocused = true, unfocusedRange = 8.0f)]
+        public void ExplodeAllEvent()
+        {
+            countDownInitiated = Time.time;
+            StartCoroutine(DoSelfDestruct());
+        }
+
+        [KSPEvent(guiActive = true, guiName = "Explode!", active = true, guiActiveUnfocused = true, unfocusedRange = 8.0f)]
+        public void ExplodeEvent()
+        {
+            part.explode();
+        }
+
+        [KSPAction("Self Destruct!")]
+        public void ExplodeAllAction(KSPActionParam param)
+        {
+            countDownInitiated = Time.time;
+            StartCoroutine(DoSelfDestruct());
+        }
+
+        [KSPAction("Explode!")]
+        public void ExplodeAction(KSPActionParam param)
+        {
+            part.explode();
+        }
+
+        private IEnumerator<WaitForSeconds> DoSelfDestruct()
+        {
+            ScreenMessages.PostScreenMessage("Self destruct sequence initiated.", timeDelay, ScreenMessageStyle.UPPER_CENTER);
+
+            while ((Time.time - countDownInitiated) < timeDelay)
             {
-                // Explode the rest of the parts
-                vessel.parts.ForEach(p => p.explode());
+                float remaining = timeDelay - (Time.time - countDownInitiated);
+                ScreenMessages.PostScreenMessage(remaining.ToString("#0"), 1.0f, ScreenMessageStyle.UPPER_CENTER);
+                yield return new WaitForSeconds(1.0f);
             }
-            yield return new WaitForSeconds(0.2f);
+
+            while (vessel.parts.Count > 0)
+            {
+                // We do not want to blow up the root part nor the self destruct part until last.
+                Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && p.children.Count == 0);
+                if (part != null)
+                {
+                    part.explode();
+                }
+                else
+                {
+                    // Explode the rest of the parts
+                    vessel.parts.ForEach(p => p.explode());
+                }
+                yield return new WaitForSeconds(0.1f);
+            }
         }
     }
 }
