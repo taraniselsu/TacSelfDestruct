@@ -63,7 +63,7 @@ namespace Tac
 
             if (state != StartState.Editor)
             {
-                Events["ExplodeAllEvent"].guiName = "Self Destruct! (" + timeDelay + " second delay)";
+                Events["ExplodeAllEvent"].guiName = "Self Destruct! (" + timeDelay + "s delay)";
             }
         }
 
