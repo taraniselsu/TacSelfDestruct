@@ -30,4 +30,5 @@ MODULE
 {
    name = TacSelfDestruct
    timeDelay = 10.0
+   canStage = false
 }

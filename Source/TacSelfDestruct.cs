@@ -35,27 +35,51 @@ namespace Tac
 {
     public class TacSelfDestruct : PartModule
     {
-        [KSPField(isPersistant = true)]
-        public float timeDelay;
-        private float countDownInitiated;
+        [KSPField]
+        public bool canStage = false;
 
-        public override void OnAwake()
-        {
-            base.OnAwake();
-        }
+        [KSPField]
+        public float timeDelay = 10.0f;
+
+        [KSPField]
+        public string stagingIconName = "FUEL_TANK";
+
+        private float countDownInitiated;
 
         public override void OnStart(PartModule.StartState state)
         {
             base.OnStart(state);
+
+            if (canStage)
+            {
+                part.stagingIcon = stagingIconName;
+                part.stackIcon.SetIconColor(XKCDColors.FireEngineRed);
+                part.ActivatesEvenIfDisconnected = true;
+            }
+            else
+            {
+                part.stagingIcon = String.Empty;
+            }
+
             if (state != StartState.Editor)
             {
                 Events["ExplodeAllEvent"].guiName = "Self Destruct! (" + timeDelay + " second delay)";
             }
         }
 
+        public override void OnActive()
+        {
+            this.Log("Activating!");
+            base.OnActive();
+            if (canStage)
+            {
+                ExplodeAllEvent();
+            }
+        }
+
         public override string GetInfo()
         {
-            return base.GetInfo() + "Self Destruct delay = " + timeDelay;
+            return base.GetInfo() + "Self Destruct delay = " + timeDelay + "\n";
         }
 
         [KSPEvent(guiActive = true, guiName = "Self Destruct!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]

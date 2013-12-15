@@ -51,6 +51,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\TacLib\Source\Logging.cs">
+      <Link>Logging.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TacSelfDestruct.cs" />
   </ItemGroup>
