@@ -58,14 +58,14 @@ namespace Tac
             return base.GetInfo() + "Self Destruct delay = " + timeDelay;
         }
 
-        [KSPEvent(guiActive = true, guiName = "Self Destruct!", active = true, guiActiveUnfocused = true, unfocusedRange = 8.0f)]
+        [KSPEvent(guiActive = true, guiName = "Self Destruct!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
         public void ExplodeAllEvent()
         {
             countDownInitiated = Time.time;
             StartCoroutine(DoSelfDestruct());
         }
 
-        [KSPEvent(guiActive = true, guiName = "Explode!", active = true, guiActiveUnfocused = true, unfocusedRange = 8.0f)]
+        [KSPEvent(guiActive = true, guiName = "Explode!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
         public void ExplodeEvent()
         {
             part.explode();
