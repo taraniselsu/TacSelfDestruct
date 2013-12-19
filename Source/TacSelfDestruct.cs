@@ -35,51 +35,66 @@ namespace Tac
 {
     public class TacSelfDestruct : PartModule
     {
-        [KSPField]
-        public bool canStage = false;
-
-        [KSPField]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Time Delay"),
+         UI_FloatRange(minValue = 1.0f, maxValue = 60.0f, stepIncrement = 1.0f, scene = UI_Scene.All)]
         public float timeDelay = 10.0f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Staging"),
+         UI_Toggle(scene = UI_Scene.All)]
+        public bool canStage = true;
 
         [KSPField]
         public string stagingIconName = "FUEL_TANK";
 
-        private float countDownInitiated;
+        private float countDownInitiated = 0.0f;
+        private bool lastCanStage = true;
+
+        public override void OnAwake()
+        {
+            this.Log("OnAwake");
+            moduleName = "Self Destruct";
+        }
 
         public override void OnStart(PartModule.StartState state)
         {
-            base.OnStart(state);
-
-            if (canStage)
-            {
-                part.stagingIcon = stagingIconName;
-                part.stackIcon.SetIconColor(XKCDColors.FireEngineRed);
-                part.ActivatesEvenIfDisconnected = true;
-            }
-            else
-            {
-                part.stagingIcon = String.Empty;
-            }
-
-            if (state != StartState.Editor)
-            {
-                Events["ExplodeAllEvent"].guiName = "Self Destruct! (" + timeDelay + "s delay)";
-            }
+            this.Log("OnStart");
+            part.stagingIcon = stagingIconName;
+            part.stackIcon.SetIconColor(XKCDColors.FireEngineRed);
+            part.ActivatesEvenIfDisconnected = true;
         }
 
         public override void OnActive()
         {
             this.Log("Activating!");
-            base.OnActive();
             if (canStage)
             {
                 ExplodeAllEvent();
             }
         }
 
+        public void Update()
+        {
+            if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
+            {
+                if (canStage && !lastCanStage)
+                {
+                    part.inverseStage = Math.Min(Staging.lastStage, part.inverseStage);
+                    part.stackIcon.CreateIcon();
+                    lastCanStage = canStage;
+                    Staging.SortIcons();
+                }
+                else if (!canStage && lastCanStage)
+                {
+                    part.stackIcon.RemoveIcon();
+                    lastCanStage = canStage;
+                    Staging.SortIcons();
+                }
+            }
+        }
+
         public override string GetInfo()
         {
-            return base.GetInfo() + "Self Destruct delay = " + timeDelay + "\n";
+            return "Default delay = " + timeDelay + " (tweakable)";
         }
 
         [KSPEvent(guiActive = true, guiName = "Self Destruct!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
@@ -122,7 +137,7 @@ namespace Tac
             while (vessel.parts.Count > 0)
             {
                 // We do not want to blow up the root part nor the self destruct part until last.
-                Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && p.children.Count == 0);
+                Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && !p.children.Any());
                 if (part != null)
                 {
                     part.explode();
