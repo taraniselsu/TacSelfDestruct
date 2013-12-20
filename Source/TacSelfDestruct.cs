@@ -39,20 +39,17 @@ namespace Tac
          UI_FloatRange(minValue = 1.0f, maxValue = 60.0f, stepIncrement = 1.0f, scene = UI_Scene.All)]
         public float timeDelay = 10.0f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Staging"),
-         UI_Toggle(scene = UI_Scene.All)]
+        [KSPField(isPersistant = true)]
         public bool canStage = true;
 
         [KSPField]
         public string stagingIconName = "FUEL_TANK";
 
         private float countDownInitiated = 0.0f;
-        private bool lastCanStage = true;
 
         public override void OnAwake()
         {
             this.Log("OnAwake");
-            moduleName = "Self Destruct";
         }
 
         public override void OnStart(PartModule.StartState state)
@@ -61,6 +58,21 @@ namespace Tac
             part.stagingIcon = stagingIconName;
             part.stackIcon.SetIconColor(XKCDColors.FireEngineRed);
             part.ActivatesEvenIfDisconnected = true;
+
+            if (!canStage)
+            {
+                StartCoroutine(InitialDisableStaging());
+            }
+            else
+            {
+                UpdateEvents();
+            }
+        }
+
+        private IEnumerator<WaitForSeconds> InitialDisableStaging()
+        {
+            yield return new WaitForSeconds(0.1f);
+            DisableStaging();
         }
 
         public override void OnActive()
@@ -72,29 +84,48 @@ namespace Tac
             }
         }
 
-        public void Update()
-        {
-            if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
-            {
-                if (canStage && !lastCanStage)
-                {
-                    part.inverseStage = Math.Min(Staging.lastStage, part.inverseStage);
-                    part.stackIcon.CreateIcon();
-                    lastCanStage = canStage;
-                    Staging.SortIcons();
-                }
-                else if (!canStage && lastCanStage)
-                {
-                    part.stackIcon.RemoveIcon();
-                    lastCanStage = canStage;
-                    Staging.SortIcons();
-                }
-            }
-        }
-
         public override string GetInfo()
         {
             return "Default delay = " + timeDelay + " (tweakable)";
+        }
+
+        [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Enable Staging")]
+        public void EnableStaging()
+        {
+            part.inverseStage = Math.Min(Staging.lastStage, part.inverseStage);
+            part.stackIcon.CreateIcon();
+            Staging.SortIcons();
+
+            canStage = true;
+            UpdateEvents();
+        }
+
+        [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Disable Staging")]
+        public void DisableStaging()
+        {
+            part.stackIcon.RemoveIcon();
+            Staging.SortIcons();
+
+            canStage = false;
+            UpdateEvents();
+        }
+
+        private void UpdateEvents()
+        {
+            if (canStage)
+            {
+                BaseEvent enableEvent = Events["EnableStaging"];
+                enableEvent.guiActive = enableEvent.guiActiveEditor = false;
+                BaseEvent disableEvent = Events["DisableStaging"];
+                disableEvent.guiActive = disableEvent.guiActiveEditor = true;
+            }
+            else
+            {
+                BaseEvent enableEvent = Events["EnableStaging"];
+                enableEvent.guiActive = enableEvent.guiActiveEditor = true;
+                BaseEvent disableEvent = Events["DisableStaging"];
+                disableEvent.guiActive = disableEvent.guiActiveEditor = false;
+            }
         }
 
         [KSPEvent(guiActive = true, guiName = "Self Destruct!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
