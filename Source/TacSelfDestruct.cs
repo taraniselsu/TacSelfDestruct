@@ -42,9 +42,6 @@ namespace Tac
         [KSPField(isPersistant = true)]
         public bool canStage = true;
 
-        [KSPField]
-        public string stagingIconName = "FUEL_TANK";
-
         private float countDownInitiated = 0.0f;
         private bool abortCountdown = false;
 
@@ -56,7 +53,6 @@ namespace Tac
         public override void OnStart(PartModule.StartState state)
         {
             this.Log("OnStart");
-            part.stagingIcon = stagingIconName;
             part.stackIcon.SetIconColor(XKCDColors.FireEngineRed);
             part.ActivatesEvenIfDisconnected = true;
 
