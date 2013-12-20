@@ -46,6 +46,7 @@ namespace Tac
         public string stagingIconName = "FUEL_TANK";
 
         private float countDownInitiated = 0.0f;
+        private bool abortCountdown = false;
 
         public override void OnAwake()
         {
@@ -65,7 +66,7 @@ namespace Tac
             }
             else
             {
-                UpdateEvents();
+                UpdateStagingEvents();
             }
         }
 
@@ -78,7 +79,7 @@ namespace Tac
         public override void OnActive()
         {
             this.Log("Activating!");
-            if (canStage)
+            if (canStage && countDownInitiated == 0.0f)
             {
                 ExplodeAllEvent();
             }
@@ -97,7 +98,7 @@ namespace Tac
             Staging.SortIcons();
 
             canStage = true;
-            UpdateEvents();
+            UpdateStagingEvents();
         }
 
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Disable Staging")]
@@ -107,10 +108,10 @@ namespace Tac
             Staging.SortIcons();
 
             canStage = false;
-            UpdateEvents();
+            UpdateStagingEvents();
         }
 
-        private void UpdateEvents()
+        private void UpdateStagingEvents()
         {
             if (canStage)
             {
@@ -133,6 +134,7 @@ namespace Tac
         {
             countDownInitiated = Time.time;
             StartCoroutine(DoSelfDestruct());
+            UpdateSelfDestructEvents();
         }
 
         [KSPEvent(guiActive = true, guiName = "Explode!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
@@ -141,44 +143,95 @@ namespace Tac
             part.explode();
         }
 
+        [KSPEvent(guiActive = false, guiActiveUnfocused = false, guiName = "Abort Self Destruct", unfocusedRange = 8.0f)]
+        public void AbortSelfDestruct()
+        {
+            abortCountdown = true;
+        }
+
         [KSPAction("Self Destruct!")]
         public void ExplodeAllAction(KSPActionParam param)
         {
-            countDownInitiated = Time.time;
-            StartCoroutine(DoSelfDestruct());
+            if (countDownInitiated == 0.0f)
+            {
+                countDownInitiated = Time.time;
+                StartCoroutine(DoSelfDestruct());
+                UpdateSelfDestructEvents();
+            }
         }
 
         [KSPAction("Explode!")]
         public void ExplodeAction(KSPActionParam param)
         {
-            part.explode();
+            if (countDownInitiated == 0.0f)
+            {
+                part.explode();
+            }
+        }
+
+        private void UpdateSelfDestructEvents()
+        {
+            if (countDownInitiated == 0.0f)
+            {
+                // countdown has not been started
+                BaseEvent explodeAll = Events["ExplodeAllEvent"];
+                explodeAll.guiActive = explodeAll.guiActiveUnfocused = true;
+                BaseEvent explode = Events["ExplodeEvent"];
+                explode.guiActive = explode.guiActiveUnfocused = true;
+                BaseEvent abort = Events["AbortSelfDestruct"];
+                abort.guiActive = abort.guiActiveUnfocused = false;
+            }
+            else
+            {
+                // countdown has been started
+                BaseEvent explodeAll = Events["ExplodeAllEvent"];
+                explodeAll.guiActive = explodeAll.guiActiveUnfocused = false;
+                BaseEvent explode = Events["ExplodeEvent"];
+                explode.guiActive = explode.guiActiveUnfocused = false;
+                BaseEvent abort = Events["AbortSelfDestruct"];
+                abort.guiActive = abort.guiActiveUnfocused = true;
+            }
         }
 
         private IEnumerator<WaitForSeconds> DoSelfDestruct()
         {
-            ScreenMessages.PostScreenMessage("Self destruct sequence initiated.", timeDelay, ScreenMessageStyle.UPPER_CENTER);
+            ScreenMessage msg = ScreenMessages.PostScreenMessage("Self destruct sequence initiated.", timeDelay, ScreenMessageStyle.UPPER_CENTER);
 
-            while ((Time.time - countDownInitiated) < timeDelay)
+            while ((Time.time - countDownInitiated) < timeDelay && !abortCountdown)
             {
                 float remaining = timeDelay - (Time.time - countDownInitiated);
-                ScreenMessages.PostScreenMessage(remaining.ToString("#0"), 1.0f, ScreenMessageStyle.UPPER_CENTER);
-                yield return new WaitForSeconds(1.0f);
+                msg.message = "Self destruct sequence initiated: " + remaining.ToString("#0");
+                yield return new WaitForSeconds(0.2f);
             }
 
-            while (vessel.parts.Count > 0)
+            if (!abortCountdown)
             {
-                // We do not want to blow up the root part nor the self destruct part until last.
-                Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && !p.children.Any());
-                if (part != null)
+                while (vessel.parts.Count > 0)
                 {
-                    part.explode();
+                    // We do not want to blow up the root part nor the self destruct part until last.
+                    Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && !p.children.Any());
+                    if (part != null)
+                    {
+                        part.explode();
+                    }
+                    else
+                    {
+                        // Explode the rest of the parts
+                        vessel.parts.ForEach(p => p.explode());
+                    }
+                    yield return new WaitForSeconds(0.1f);
                 }
-                else
-                {
-                    // Explode the rest of the parts
-                    vessel.parts.ForEach(p => p.explode());
-                }
-                yield return new WaitForSeconds(0.1f);
+            }
+            else
+            {
+                // reset
+                msg.startTime = Time.time;
+                msg.duration = 5.0f;
+                msg.message = "Self destruct sequence stopped.";
+
+                countDownInitiated = 0.0f;
+                abortCountdown = false;
+                UpdateSelfDestructEvents();
             }
         }
     }
