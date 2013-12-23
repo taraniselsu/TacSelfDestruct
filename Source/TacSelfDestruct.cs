@@ -58,18 +58,19 @@ namespace Tac
 
             if (!canStage)
             {
-                StartCoroutine(InitialDisableStaging());
+                Invoke("DisableStaging", 0.5f);
             }
             else
             {
                 UpdateStagingEvents();
             }
+
+            GameEvents.onVesselChange.Add(OnVesselChange);
         }
 
-        private IEnumerator<WaitForSeconds> InitialDisableStaging()
+        public override void OnInitialize()
         {
-            yield return new WaitForSeconds(0.1f);
-            DisableStaging();
+            this.Log("OnInitialize");
         }
 
         public override void OnActive()
@@ -81,6 +82,14 @@ namespace Tac
             }
         }
 
+        public void OnVesselChange(Vessel newVessel)
+        {
+            if (newVessel == this.vessel && !canStage)
+            {
+                Invoke("DisableStaging", 0.5f);
+            }
+        }
+
         public override string GetInfo()
         {
             return "Default delay = " + timeDelay + " (tweakable)";
@@ -89,6 +98,7 @@ namespace Tac
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Enable Staging")]
         public void EnableStaging()
         {
+            part.deactivate();
             part.inverseStage = Math.Min(Staging.lastStage, part.inverseStage);
             part.stackIcon.CreateIcon();
             Staging.SortIcons();
@@ -109,19 +119,18 @@ namespace Tac
 
         private void UpdateStagingEvents()
         {
-            if (canStage)
+            if (HighLogic.LoadedSceneIsEditor)
             {
-                BaseEvent enableEvent = Events["EnableStaging"];
-                enableEvent.guiActive = enableEvent.guiActiveEditor = false;
-                BaseEvent disableEvent = Events["DisableStaging"];
-                disableEvent.guiActive = disableEvent.guiActiveEditor = true;
-            }
-            else
-            {
-                BaseEvent enableEvent = Events["EnableStaging"];
-                enableEvent.guiActive = enableEvent.guiActiveEditor = true;
-                BaseEvent disableEvent = Events["DisableStaging"];
-                disableEvent.guiActive = disableEvent.guiActiveEditor = false;
+                if (canStage)
+                {
+                    Events["EnableStaging"].guiActiveEditor = false;
+                    Events["DisableStaging"].guiActiveEditor = true;
+                }
+                else
+                {
+                    Events["EnableStaging"].guiActiveEditor = true;
+                    Events["DisableStaging"].guiActiveEditor = false;
+                }
             }
         }
 
@@ -225,6 +234,7 @@ namespace Tac
                 msg.duration = 5.0f;
                 msg.message = "Self destruct sequence stopped.";
 
+                part.deactivate();
                 countDownInitiated = 0.0f;
                 abortCountdown = false;
                 UpdateSelfDestructEvents();
