@@ -65,6 +65,7 @@ namespace Tac
                 UpdateStagingEvents();
             }
 
+            UpdateStagingEvents();
             GameEvents.onVesselChange.Add(OnVesselChange);
         }
 
@@ -95,7 +96,7 @@ namespace Tac
             return "Default delay = " + timeDelay + " (tweakable)";
         }
 
-        [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Enable Staging")]
+        [KSPEvent(active = false, guiActive = false, guiActiveEditor = true, guiName = "Enable Staging")]
         public void EnableStaging()
         {
             part.deactivate();
@@ -107,7 +108,7 @@ namespace Tac
             UpdateStagingEvents();
         }
 
-        [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Disable Staging")]
+        [KSPEvent(active = false, guiActive = false, guiActiveEditor = true, guiName = "Disable Staging")]
         public void DisableStaging()
         {
             part.stackIcon.RemoveIcon();
@@ -123,18 +124,23 @@ namespace Tac
             {
                 if (canStage)
                 {
-                    Events["EnableStaging"].guiActiveEditor = false;
-                    Events["DisableStaging"].guiActiveEditor = true;
+                    Events["EnableStaging"].active = false;
+                    Events["DisableStaging"].active = true;
                 }
                 else
                 {
-                    Events["EnableStaging"].guiActiveEditor = true;
-                    Events["DisableStaging"].guiActiveEditor = false;
+                    Events["EnableStaging"].active = true;
+                    Events["DisableStaging"].active = false;
                 }
+            }
+            else
+            {
+                Events["EnableStaging"].active = false;
+                Events["DisableStaging"].active = false;
             }
         }
 
-        [KSPEvent(guiActive = true, guiName = "Self Destruct!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
+        [KSPEvent(active = false, guiActive = true, guiActiveUnfocused = true, guiName = "Self Destruct!", unfocusedRange = 8.0f)]
         public void ExplodeAllEvent()
         {
             countDownInitiated = Time.time;
@@ -142,13 +148,13 @@ namespace Tac
             UpdateSelfDestructEvents();
         }
 
-        [KSPEvent(guiActive = true, guiName = "Explode!", guiActiveUnfocused = true, unfocusedRange = 8.0f)]
+        [KSPEvent(active = false, guiActive = true, guiActiveUnfocused = true, guiName = "Explode!", unfocusedRange = 8.0f)]
         public void ExplodeEvent()
         {
             part.explode();
         }
 
-        [KSPEvent(guiActive = false, guiActiveUnfocused = false, guiName = "Abort Self Destruct", unfocusedRange = 8.0f)]
+        [KSPEvent(active = false, guiActive = true, guiActiveUnfocused = true, guiName = "Abort Self Destruct", unfocusedRange = 8.0f)]
         public void AbortSelfDestruct()
         {
             abortCountdown = true;
@@ -179,22 +185,16 @@ namespace Tac
             if (countDownInitiated == 0.0f)
             {
                 // countdown has not been started
-                BaseEvent explodeAll = Events["ExplodeAllEvent"];
-                explodeAll.guiActive = explodeAll.guiActiveUnfocused = true;
-                BaseEvent explode = Events["ExplodeEvent"];
-                explode.guiActive = explode.guiActiveUnfocused = true;
-                BaseEvent abort = Events["AbortSelfDestruct"];
-                abort.guiActive = abort.guiActiveUnfocused = false;
+                Events["ExplodeAllEvent"].active = true;
+                Events["ExplodeEvent"].active = true;
+                Events["AbortSelfDestruct"].active = false;
             }
             else
             {
                 // countdown has been started
-                BaseEvent explodeAll = Events["ExplodeAllEvent"];
-                explodeAll.guiActive = explodeAll.guiActiveUnfocused = false;
-                BaseEvent explode = Events["ExplodeEvent"];
-                explode.guiActive = explode.guiActiveUnfocused = false;
-                BaseEvent abort = Events["AbortSelfDestruct"];
-                abort.guiActive = abort.guiActiveUnfocused = true;
+                Events["ExplodeAllEvent"].active = false;
+                Events["ExplodeEvent"].active = false;
+                Events["AbortSelfDestruct"].active = true;
             }
         }
 
