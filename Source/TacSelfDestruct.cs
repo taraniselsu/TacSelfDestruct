@@ -33,6 +33,7 @@ using UnityEngine;
 
 namespace Tac
 {
+    [KSPModule("TAC Self Destruct")]
     public class TacSelfDestruct : PartModule
     {
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Time Delay"),
@@ -69,7 +70,7 @@ namespace Tac
                 UpdateStagingEvents();
             }
 
-            UpdateStagingEvents();
+            UpdateSelfDestructEvents();
             GameEvents.onVesselChange.Add(OnVesselChange);
         }
 
