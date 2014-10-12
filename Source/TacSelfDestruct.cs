@@ -42,6 +42,10 @@ namespace Tac
         [KSPField(isPersistant = true)]
         public bool canStage = true;
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Countdown"),
+         UI_Toggle(scene = UI_Scene.All, enabledText = "", disabledText = "")]
+        public bool showCountdown = true;
+
         private float countDownInitiated = 0.0f;
         private bool abortCountdown = false;
 
@@ -200,12 +204,16 @@ namespace Tac
 
         private IEnumerator<WaitForSeconds> DoSelfDestruct()
         {
-            ScreenMessage msg = ScreenMessages.PostScreenMessage("Self destruct sequence initiated.", timeDelay, ScreenMessageStyle.UPPER_CENTER);
+            ScreenMessage msg = null;
+            if (showCountdown && RenderingManager.fetch.enabled)
+            {
+                msg = ScreenMessages.PostScreenMessage("Self destruct sequence initiated.", timeDelay, ScreenMessageStyle.UPPER_CENTER);
+            }
 
             while ((Time.time - countDownInitiated) < timeDelay && !abortCountdown)
             {
                 float remaining = timeDelay - (Time.time - countDownInitiated);
-                msg.message = "Self destruct sequence initiated: " + remaining.ToString("#0");
+                UpdateCountdownMessage(ref msg, remaining);
                 yield return new WaitForSeconds(0.2f);
             }
 
@@ -230,14 +238,47 @@ namespace Tac
             else
             {
                 // reset
-                msg.startTime = Time.time;
-                msg.duration = 5.0f;
-                msg.message = "Self destruct sequence stopped.";
+                if (msg != null)
+                {
+                    msg.startTime = Time.time;
+                    msg.duration = 5.0f;
+                    msg.message = "Self destruct sequence stopped.";
+                }
 
                 part.deactivate();
                 countDownInitiated = 0.0f;
                 abortCountdown = false;
                 UpdateSelfDestructEvents();
+            }
+        }
+
+        private void UpdateCountdownMessage(ref ScreenMessage msg, float remaining)
+        {
+            // If the countdown message is currently being displayed
+            if (msg != null)
+            {
+                // If it is still supposed to be displayed
+                if (showCountdown && RenderingManager.fetch.enabled)
+                {
+                    // Update the countdown message
+                    msg.message = "Self destruct sequence initiated: " + remaining.ToString("#0");
+                }
+                else
+                {
+                    // The UI must have been hidden or the user changed showCountdown?
+                    msg.duration = 1.0f;
+                    msg = null;
+                }
+            }
+            else
+            {
+                // If it should be displayed now. Maybe the UI was unhidden or the user changed showCountdown?
+                if (showCountdown && RenderingManager.fetch.enabled)
+                {
+                    // Show the countdown message
+                    msg = ScreenMessages.PostScreenMessage("Self destruct sequence initiated: " + remaining.ToString("#0"),
+                        remaining, ScreenMessageStyle.UPPER_CENTER);
+                }
             }
         }
     }
