@@ -65,10 +65,16 @@
     <AssemblyFileBuildNumber>1</AssemblyFileBuildNumber>
     <AssemblyFileMajorVersion>$(AssemblyMajorVersion)</AssemblyFileMajorVersion>
     <AssemblyFileMinorVersion>$(AssemblyMinorVersion)</AssemblyFileMinorVersion>
+    <AssemblyFileBuildNumber>$(AssemblyBuildNumber)</AssemblyFileBuildNumber>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <!-- Needed for the WriteAvcVersion build target -->
+    <ModName>TAC Self Destruct</ModName>
+    <ModUrl>http://ksp-avc.cybutek.net/version.php?id=62</ModUrl>
+    <DownloadUrl></DownloadUrl>
+    <KspVersionMajor>0</KspVersionMajor>
+    <KspVersionMinor>25</KspVersionMinor>
+    <KspVersionPatch>0</KspVersionPatch>
   </PropertyGroup>
   <Target Name="BeforeBuild">
     <CallTarget Targets="GitInfo" />
