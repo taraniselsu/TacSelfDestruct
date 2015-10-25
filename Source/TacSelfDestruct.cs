@@ -82,7 +82,7 @@ namespace Tac
         public override void OnActive()
         {
             this.Log("Activating!");
-            if (canStage && countDownInitiated == 0.0f)
+            if (canStage && countDownInitiated.Equals(0))
             {
                 ExplodeAllEvent();
             }
@@ -159,6 +159,14 @@ namespace Tac
             part.explode();
         }
 
+		[KSPEvent(active = false, guiActive = true, guiActiveUnfocused = true, guiName = "Destroy Parent Part!", unfocusedRange = 8.0f)]
+		public void ExplodeParentEvent()
+		{
+			countDownInitiated = Time.time;
+			StartCoroutine(DoExplodeWithParent());
+			UpdateSelfDestructEvents();
+		}
+
         [KSPEvent(active = false, guiActive = true, guiActiveUnfocused = true, guiName = "Abort Self Destruct", unfocusedRange = 8.0f)]
         public void AbortSelfDestruct()
         {
@@ -168,7 +176,7 @@ namespace Tac
         [KSPAction("Self Destruct!")]
         public void ExplodeAllAction(KSPActionParam param)
         {
-            if (countDownInitiated == 0.0f)
+            if (countDownInitiated.Equals(0))
             {
                 countDownInitiated = Time.time;
                 StartCoroutine(DoSelfDestruct());
@@ -179,19 +187,29 @@ namespace Tac
         [KSPAction("Explode!")]
         public void ExplodeAction(KSPActionParam param)
         {
-            if (countDownInitiated == 0.0f)
+            if (countDownInitiated.Equals(0))
             {
                 part.explode();
             }
         }
 
+		[KSPAction("Destroy Parent Part!")]
+		public void ExplodeParent(KSPActionParam param)
+		{
+			if (countDownInitiated.Equals(0))
+			{
+				ExplodeParentEvent();
+			}
+		}
+
         private void UpdateSelfDestructEvents()
         {
-            if (countDownInitiated == 0.0f)
+            if (countDownInitiated.Equals(0))
             {
                 // countdown has not been started
                 Events["ExplodeAllEvent"].active = true;
                 Events["ExplodeEvent"].active = true;
+				Events["ExplodeParentEvent"].active = true;
                 Events["AbortSelfDestruct"].active = false;
             }
             else
@@ -199,6 +217,7 @@ namespace Tac
                 // countdown has been started
                 Events["ExplodeAllEvent"].active = false;
                 Events["ExplodeEvent"].active = false;
+				Events["ExplodeParentEvent"].active = false;
                 Events["AbortSelfDestruct"].active = true;
             }
         }
@@ -223,10 +242,10 @@ namespace Tac
                 while (vessel.parts.Count > 0)
                 {
                     // We do not want to blow up the root part nor the self destruct part until last.
-                    Part part = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && !p.children.Any());
-                    if (part != null)
+					Part part_to_destry = vessel.parts.Find(p => p != vessel.rootPart && p != this.part && !p.children.Any());
+                    if (part_to_destry != null)
                     {
-                        part.explode();
+                        part_to_destry.explode();
                     }
                     else
                     {
@@ -252,6 +271,44 @@ namespace Tac
                 UpdateSelfDestructEvents();
             }
         }
+
+		private IEnumerator<WaitForSeconds> DoExplodeWithParent()
+		{
+			ScreenMessage msg = null;
+			if (showCountdown && RenderingManager.fetch.enabled)
+			{
+				msg = ScreenMessages.PostScreenMessage("Self destruct sequence initiated.", timeDelay, ScreenMessageStyle.UPPER_CENTER);
+			}
+
+			while ((Time.time - countDownInitiated) < timeDelay && !abortCountdown)
+			{
+				float remaining = timeDelay - (Time.time - countDownInitiated);
+				UpdateCountdownMessage(ref msg, remaining);
+				yield return new WaitForSeconds(0.2f);
+			}
+
+			if (!abortCountdown)
+			{
+				if(this.part.parent != null) this.part.parent.explode();
+				this.part.explode();
+				yield return new WaitForSeconds(0.1f);
+			}
+			else
+			{
+				// reset
+				if (msg != null)
+				{
+					msg.startTime = Time.time;
+					msg.duration = 5.0f;
+					msg.message = "Self destruct sequence stopped.";
+				}
+
+				part.deactivate();
+				countDownInitiated = 0.0f;
+				abortCountdown = false;
+				UpdateSelfDestructEvents();
+			}
+		}
 
         private void UpdateCountdownMessage(ref ScreenMessage msg, float remaining)
         {
