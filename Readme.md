@@ -12,7 +12,7 @@ Modified source is available at: https://github.com/DrSpaceMonkey/TacSelfDestruc
 
 ### Any problems experienced with this version are not Taranis Elsu's fault. Please leave him alone if I broke something.
 
-### Features ###
+### Features
 
 * Self Destruct - makes the entire vessel explode! Make sure you EVA your crew first!
 * Explode - only makes the Self Destruct part explode. Useful for creating a little
@@ -28,7 +28,7 @@ Modified source is available at: https://github.com/DrSpaceMonkey/TacSelfDestruc
       detonating the parent part.
 
 
-### Installation procedure ### 
+### Installation procedure 
 
 1) Copy everything in the GameData directory to the {KSP}/GameData directory.
 
