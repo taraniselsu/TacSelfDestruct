@@ -1,0 +1,3 @@
+﻿You have installed the TAC Self Destruct, version  ('12b7ad1'+'973167c' with modifications).
+
+See the Readme.txt and LICENSE.txt files for more information.
